@@ -1,4 +1,4 @@
-name: Update SK hynix DART data
+name: DART data update and GitHub Pages dashboard
 
 on:
   workflow_dispatch:
@@ -7,24 +7,40 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
-  update:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: python scripts/fetch_dart.py
+      - name: Collect DART financial data
+        run: python scripts/fetch_dart.py
         env:
           DART_API_KEY: ${{ secrets.DART_API_KEY }}
-      - run: python scripts/calculate_ratios.py
-      - name: Commit data
+      - name: Calculate financial ratios
+        run: python scripts/calculate_ratios.py
+      - name: Commit processed data
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/
-          git diff --cached --quiet || git commit -m "chore: update DART financial data"
+          git add data/processed
+          git diff --cached --quiet || git commit -m "chore: update DART financial analysis"
           git push
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: "."
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
