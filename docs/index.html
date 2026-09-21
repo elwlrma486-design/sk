@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SK하이닉스 10년 재무분석</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f5f7fa;color:#17202a}.wrap{max-width:1200px;margin:auto;padding:28px}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card,section{background:white;border-radius:12px;padding:18px;box-shadow:0 2px 10px #0000000d}section{margin-top:18px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.muted{color:#6b7280;font-size:13px}canvas{max-height:330px}@media(max-width:800px){.cards,.grid{grid-template-columns:1fr 1fr}}@media(max-width:520px){.cards,.grid{grid-template-columns:1fr}}
+</style></head>
+<body><div class="wrap">
+<h1>SK하이닉스 10년 재무분석</h1><p class="muted">DART OpenDART 연결 재무제표 · 2016~2025 · 자동 업데이트</p>
+<div id="cards" class="cards"></div>
+<div class="grid"><section><h2>매출·영업이익</h2><canvas id="profit"></canvas></section><section><h2>수익성</h2><canvas id="margin"></canvas></section><section><h2>ROE · ROA</h2><canvas id="return"></canvas></section><section><h2>재무안정성</h2><canvas id="stability"></canvas></section></div>
+<section><h2>10개년 원자료</h2><div style="overflow:auto"><table id="table" border="0" cellspacing="0" cellpadding="8"></table></div></section>
+</div>
+<script>
+const pct=v=>v==null||Number.isNaN(v)?"-":(v*100).toFixed(1)+"%";
+const bn=v=>v==null||Number.isNaN(v)?"-":(v/1e8).toLocaleString("ko-KR",{maximumFractionDigits:0})+"억원";
+fetch("../data/processed/sk_hynix_financial_analysis_2016_2025.json").then(r=>r.json()).then(d=>{
+const years=d.map(x=>x.year);
+const last=d[d.length-1];
+document.getElementById("cards").innerHTML=[
+["매출",bn(last.revenue)],["영업이익",bn(last.operating_income)],["영업이익률",pct(last.operating_margin)],["ROE",pct(last.roe)]
+].map(x=>'<div class="card"><div class="muted">'+x[0]+'</div><h2>'+x[1]+'</h2></div>').join("");
+function chart(id,sets){new Chart(document.getElementById(id),{type:"line",data:{labels:years,datasets:sets},options:{responsive:true,interaction:{mode:"index",intersect:false},scales:{y:{beginAtZero:false}}}})}
+chart("profit",[{label:"매출",data:d.map(x=>x.revenue/1e12),borderWidth:2},{label:"영업이익",data:d.map(x=>x.operating_income/1e12),borderWidth:2}]);
+chart("margin",[{label:"매출총이익률",data:d.map(x=>x.gross_margin*100),borderWidth:2},{label:"영업이익률",data:d.map(x=>x.operating_margin*100),borderWidth:2},{label:"순이익률",data:d.map(x=>x.net_margin*100),borderWidth:2}]);
+chart("return",[{label:"ROE",data:d.map(x=>x.roe*100),borderWidth:2},{label:"ROA",data:d.map(x=>x.roa*100),borderWidth:2}]);
+chart("stability",[{label:"유동비율",data:d.map(x=>x.current_ratio*100),borderWidth:2},{label:"부채비율",data:d.map(x=>x.debt_ratio*100),borderWidth:2}]);
+const cols=["year","revenue","operating_income","net_income","assets","liabilities","equity","revenue_growth","operating_margin","net_margin","roe","roa","current_ratio","debt_ratio"];
+document.getElementById("table").innerHTML="<tr>"+cols.map(c=>"<th>"+c+"</th>").join("")+"</tr>"+d.map(x=>"<tr>"+cols.map(c=>"<td>"+(c.includes("margin")||c.includes("growth")||c==="roe"||c==="roa"?pct(x[c]):c==="current_ratio"||c==="debt_ratio"?x[c].toFixed(2):c==="year"?x[c]:bn(x[c]))+"</td>").join("")+"</tr>").join("");
+}).catch(e=>document.querySelector(".wrap").insertAdjacentHTML("beforeend","<section>DART 데이터가 아직 생성되지 않았습니다. GitHub Actions에서 데이터 수집을 실행하세요.</section>"));
+</script></body></html>
