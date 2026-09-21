@@ -22,7 +22,11 @@ for year, sub in df.groupby(df["bsns_year"].astype(str)):
     rec={"year":int(year)}
     for key,names in MAP.items():
         x=sub[sub["account_nm"].isin(names)]
-        rec[key]=pd.to_numeric(x.iloc[0]["thstrm_amount"].replace(",",""),errors="coerce") if not x.empty else np.nan
+        if not x.empty:
+            value = x.iloc[0]["thstrm_amount"]
+            rec[key] = pd.to_numeric(value, errors="coerce")
+        else:
+            rec[key] = np.nan
     records.append(rec)
 out=pd.DataFrame(records).sort_values("year")
 out["avg_assets"]=(out["assets"]+out["assets"].shift(1))/2
