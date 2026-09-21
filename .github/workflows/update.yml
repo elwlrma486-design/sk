@@ -1,6 +1,8 @@
 name: DART data update and GitHub Pages dashboard
 
 on:
+  push:
+    branches: ["main"]
   workflow_dispatch:
   schedule:
     - cron: "30 0 * * 1"
